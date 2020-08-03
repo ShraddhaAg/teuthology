@@ -52,7 +52,7 @@ def lock_many_openstack(ctx, num, machine_type, user=None, description=None,
 
 
 def lock_many(ctx, num, machine_type, user=None, description=None,
-              os_type=None, os_version=None, arch=None):
+              os_type=None, os_version=None, arch=None, reimage=True):
     if user is None:
         user = misc.get_user()
 
@@ -128,7 +128,7 @@ def lock_many(ctx, num, machine_type, user=None, description=None,
                     ok_machs = do_update_keys(list(ok_machs.keys()))[1]
                 update_nodes(ok_machs)
                 return ok_machs
-            elif machine_type in reimage_types:
+            elif reimage and machine_type in reimage_types:
                 reimaged = dict()
                 console_log_conf = dict(
                     logfile_name='{shortname}_reimage.log',

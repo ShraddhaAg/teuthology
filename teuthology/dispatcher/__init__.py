@@ -203,7 +203,7 @@ def prep_job(job_config, log_file_path, archive_dir):
 def lock_machines(job_config):
     fake_ctx = create_fake_context(job_config, block=True)
     lock_machines_helper(fake_ctx, [len(job_config['roles']),
-                         job_config['machine_type']])
+                         job_config['machine_type']], reimage=False)
     job_config = fake_ctx.config
     return job_config
 
