@@ -16,6 +16,7 @@ from teuthology.misc import pull_directory
 from teuthology.dispatcher import create_fake_context
 from teuthology.task.internal import add_remotes
 from teuthology import setup_log_file, install_except_hook
+from teuthology.lock.ops import reimage_many
 
 log = logging.getLogger(__name__)
 start_time = datetime.utcnow()
@@ -235,3 +236,9 @@ def transfer_archives(run_name, job_id, archive_base, job_config):
                 pull_directory(remote, log_path, os.path.join(sub, log_type))
     else:
         log.info('No archives to transfer.')
+
+
+def reimage_machines(job_config):
+    ctx = create_fake_context(job_config)
+    targets = [i for i in job_config['target']]
+    reimage_many(ctx, targets, job_config['machine_type'])

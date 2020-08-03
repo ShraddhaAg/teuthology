@@ -129,23 +129,7 @@ def lock_many(ctx, num, machine_type, user=None, description=None,
                 update_nodes(ok_machs)
                 return ok_machs
             elif reimage and machine_type in reimage_types:
-                reimaged = dict()
-                console_log_conf = dict(
-                    logfile_name='{shortname}_reimage.log',
-                    remotes=[teuthology.orchestra.remote.Remote(machine)
-                             for machine in machines],
-                )
-                with console_log.task(
-                        ctx, console_log_conf):
-                    update_nodes(reimaged, True)
-                    with teuthology.parallel.parallel() as p:
-                        for machine in machines:
-                            p.spawn(teuthology.provision.reimage, ctx,
-                                    machine, machine_type)
-                            reimaged[machine] = machines[machine]
-                reimaged = do_update_keys(list(reimaged.keys()))[1]
-                update_nodes(reimaged)
-                return reimaged
+                return reimage_many(machines, machine_type)
             return machines
         elif response.status_code == 503:
             log.error('Insufficient nodes available to lock %d %s nodes.',
@@ -297,3 +281,29 @@ def push_new_keys(keys_dict, reference):
                 log.error('failed to update %s!', hostname)
                 ret = 1
     return ret
+
+
+def reimage(ctx, machines, machine_type):
+    reimaged = dict()
+    with teuthology.parallel.parallel() as p:
+        for machine in machines:
+            log.debug("Start node '%s' reimaging", machine)
+            update_nodes(machine, True)
+            p.spawn(teuthology.provision.reimage, ctx,
+                    machine, machine_type)
+            reimaged[machine] = machines[machine]
+    return reimaged
+
+
+def reimage_many(ctx, machines, machine_type, ):
+    reimaged = dict()
+    console_log_conf = dict(
+        logfile_name='{shortname}_reimage.log',
+        remotes=[teuthology.orchestra.remote.Remote(machine)
+                 for machine in machines],
+    )
+    with console_log.task(ctx, console_log_conf):
+        reimaged = reimage(ctx, machines, machine_type)
+    reimaged = do_update_keys(list(reimaged.keys()))[1]
+    update_nodes(reimaged)
+    return reimaged
