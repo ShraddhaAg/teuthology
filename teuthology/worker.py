@@ -49,6 +49,9 @@ def main(args):
 
     install_except_hook()
 
+    if 'targets' in job_config:
+        reimage_machines(job_config)
+
     try:
         run_job(
             job_config,
@@ -240,5 +243,10 @@ def transfer_archives(run_name, job_id, archive_base, job_config):
 
 def reimage_machines(job_config):
     ctx = create_fake_context(job_config)
-    targets = [i for i in job_config['target']]
-    reimage_many(ctx, targets, job_config['machine_type'])
+    # change the status during the reimaging process
+    report.try_push_job_info(ctx.config, dict(status='waiting'))
+    targets = job_config['targets']
+    reimaged = reimage_many(ctx, targets, job_config['machine_type'])
+    ctx.config['targets'] = reimaged
+    # change the status to running after the reimaging process
+    report.try_push_job_info(ctx.config, dict(status='waiting'))

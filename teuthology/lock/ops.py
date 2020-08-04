@@ -129,7 +129,7 @@ def lock_many(ctx, num, machine_type, user=None, description=None,
                 update_nodes(ok_machs)
                 return ok_machs
             elif reimage and machine_type in reimage_types:
-                return reimage_many(machines, machine_type)
+                return reimage_many(ctx, machines, machine_type)
             return machines
         elif response.status_code == 503:
             log.error('Insufficient nodes available to lock %d %s nodes.',
@@ -288,14 +288,14 @@ def reimage(ctx, machines, machine_type):
     with teuthology.parallel.parallel() as p:
         for machine in machines:
             log.debug("Start node '%s' reimaging", machine)
-            update_nodes(machine, True)
+            update_nodes([machine], True)
             p.spawn(teuthology.provision.reimage, ctx,
                     machine, machine_type)
             reimaged[machine] = machines[machine]
     return reimaged
 
 
-def reimage_many(ctx, machines, machine_type, ):
+def reimage_many(ctx, machines, machine_type):
     reimaged = dict()
     console_log_conf = dict(
         logfile_name='{shortname}_reimage.log',
