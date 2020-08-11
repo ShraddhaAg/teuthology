@@ -5,8 +5,6 @@ import tempfile
 import time
 import yaml
 
-from datetime import datetime
-
 from teuthology import report
 from teuthology import safepath
 from teuthology.config import config as teuth_config
@@ -21,9 +19,6 @@ import teuthology
 from teuthology.nuke import nuke
 
 log = logging.getLogger(__name__)
-start_time = datetime.utcnow()
-restart_file_path = '/tmp/teuthology-restart-workers'
-stop_file_path = '/tmp/teuthology-stop-workers'
 
 
 def main(args):
@@ -31,10 +26,9 @@ def main(args):
     verbose = args["--verbose"]
     archive_dir = args["--archive-dir"]
     teuth_bin_path = args["--bin-path"]
-    config_fd = int(args["--config-fd"])
+    config_file_path = args["--config-file"]
 
-    with open(config_fd, 'r') as config_file:
-        config_file.seek(0)
+    with open(config_file_path, 'r') as config_file:
         job_config = yaml.safe_load(config_file)
 
     loglevel = logging.INFO

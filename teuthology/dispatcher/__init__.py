@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 import yaml
-import tempfile
 
 from datetime import datetime
 
@@ -134,12 +133,16 @@ def main(args):
             '--archive-dir', archive_dir,
         ]
 
-        with tempfile.NamedTemporaryFile(prefix='teuthology-dispatcher.',
-                                         suffix='.tmp', mode='w+t') as tmp:
-            yaml.safe_dump(data=job_config, stream=tmp)
-            tmp.flush()
-            run_args.extend(["--config-fd", str(tmp.fileno())])
-            job_proc = subprocess.Popen(run_args, pass_fds=[tmp.fileno()])
+        suite_dir = os.path.join(archive_dir, job_config['name'], str(job_id))
+        if (not os.path.exists(suite_dir)):
+            os.mkdir(suite_dir)
+        config_file_path = os.path.join(suite_dir, 'dispatcher.yaml')
+
+        with open(config_file_path, mode='w+t') as config_file:
+            yaml.safe_dump(data=job_config, stream=config_file)
+            config_file.flush()
+            run_args.extend(["--config-file", config_file_path])
+            job_proc = subprocess.Popen(run_args)
 
         log.info('Job subprocess PID: %s', job_proc.pid)
 
