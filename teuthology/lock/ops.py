@@ -315,7 +315,7 @@ def reimage_many(ctx, machines, machine_type):
     return reimaged
 
 
-def block_and_lock_machines(ctx, total_requested, machine_type):
+def block_and_lock_machines(ctx, total_requested, machine_type, reimage=True):
     # It's OK for os_type and os_version to be None here.  If we're trying
     # to lock a bare metal machine, we'll take whatever is available.  If
     # we want a vps, defaults will be provided by misc.get_distro and

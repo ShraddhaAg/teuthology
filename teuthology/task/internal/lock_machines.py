@@ -16,19 +16,15 @@ def lock_machines(ctx, config):
     new machines.  This is not called if the one has teuthology-locked
     machines and placed those keys in the Targets section of a yaml file.
     """
-    lock_machines_helper(ctx, config)
-    try:
-        yield
-    finally:
-        unlock_machines(ctx)
-
-
-def lock_machines_helper(ctx, config, reimage=True):
     assert isinstance(config[0], int), 'config[0] must be an integer'
     machine_type = config[1]
     total_requested = config[0]
     # We want to make sure there are always this many machines available
     teuthology.lock.ops.block_and_lock_machines(ctx, total_requested, machine_type)
+    try:
+        yield
+    finally:
+        unlock_machines(ctx)
 
 
 def unlock_machines(ctx):
