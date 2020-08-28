@@ -13,14 +13,15 @@ from teuthology.config import config as teuth_config
 from teuthology.exceptions import SkipJob
 from teuthology import setup_log_file, install_except_hook
 from teuthology.lock.ops import reimage_machines
-from teuthology.misc import get_user, archive_logs, compress_logs
+from teuthology.misc import get_user, archive_logs, compress_logs, get_archive_dir
 from teuthology.config import FakeNamespace
 from teuthology.job_status import get_status
 from teuthology.nuke import nuke
 from teuthology.kill import kill_job
-from teuthology.task.internal import add_remotes
+from teuthology.task.internal import add_remotes, fetch_binaries_for_coredumps
 from teuthology.misc import decanonicalize_hostname as shortname
 from teuthology.lock import query
+from teuthology.orchestra import cluster, remote, run
 
 log = logging.getLogger(__name__)
 
@@ -266,5 +267,32 @@ def transfer_archives(run_name, job_id, archive_base, job_config):
                 log_type = ''
             compress_logs(ctx, log_path)
             archive_logs(ctx, log_path, log_type)
+
+        archive_dir = get_archive_dir(ctx)
+        run.wait(
+            ctx.cluster.run(
+                args=[
+                    'sudo', 'sysctl', '-w', 'kernel.core_pattern=core',
+                    run.Raw('&&'),
+                    # don't litter the archive dir if there were no cores dumped
+                    'rmdir',
+                    '--ignore-fail-on-non-empty',
+                    '--',
+                    '{adir}/coredump'.format(adir=archive_dir),
+                ],
+                wait=False,
+            )
+        )
+
+        # set status = 'fail' if the dir is still there = coredumps were
+        # seen
+        for rem in ctx.cluster.remotes.keys():
+            try:
+                rem.sh("test -e " + archive_dir + "/coredump")
+            except run.CommandFailedError:
+                continue
+            path = os.path.join(ctx.archive, 'remote')
+            sub = os.path.join(path, remote.shortname)
+            fetch_binaries_for_coredumps(sub, rem)
     else:
         log.info('No archives to transfer.')
